@@ -1,0 +1,14 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.3.7
+_src_path: https://github.com/jupyterlab/extension-template
+author_email: oswaldo.vanegasg@ug.edu.ec
+author_name: Oswaldo Vanegas
+has_binder: true
+has_settings: false
+kind: server
+labextension_name: serial-ext-jlab
+project_short_description: A JupyterLab extension for serial com
+python_name: serial_ext_jlab
+repository: ''
+test: true
+
