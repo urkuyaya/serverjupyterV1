@@ -3,6 +3,7 @@ from tornado.websocket import WebSocketHandler
 from jupyter_server.utils import url_path_join
 import serial
 import threading
+import time
 
 class SerialWebSocketHandler(WebSocketHandler):
     """
@@ -22,11 +23,9 @@ class SerialWebSocketHandler(WebSocketHandler):
             print(f"Received message: {data}")
             
             if "command" in data:
-                # Write a command to the serial port
                 print(f"Sending command: {data['command']}")
                 self.serial_reader.send_command(data["command"])
             elif "port" in data and "baudrate" in data:
-                # Configure the serial port
                 print(f"Configuring serial port: {data['port']} at {data['baudrate']}")
                 self.serial_reader.start_reading(data["port"], data["baudrate"])
         except Exception as e:
@@ -58,7 +57,8 @@ class SerialReader:
         if self.serial_port and self.serial_port.is_open:
             try:
                 print(f"Writing to serial port: {command}")
-                self.serial_port.write(f"{command}\n".encode())  # Add newline for standard serial communication
+                self.serial_port.write(f"{command}\n".encode())  # Add newline for standard communication
+                time.sleep(3)            
             except Exception as e:
                 print(f"Error writing to serial port: {e}")
                 self._broadcast_to_clients(f"Error writing to serial port: {e}")
@@ -89,10 +89,10 @@ class SerialReader:
     def _read_serial(self):
         while self.running:
             try:
-                if self.serial_port.in_waiting > 0:
-                    data = self.serial_port.readline().decode().strip()
+                if self.serial_port and self.serial_port.in_waiting > 0:
+                    data = self.serial_port.readline().decode(errors="ignore").strip()
                     print(f"Received from serial port: {data}")
-                    self._broadcast_to_clients(data)
+                    self._broadcast_to_clients(data)  # Send data to all connected clients
             except Exception as e:
                 print(f"Error reading from serial port: {e}")
                 self._broadcast_to_clients(f"Error reading from serial port: {e}")

@@ -15,7 +15,6 @@ class SerialMonitorWidget extends Widget {
     this.title.label = 'Serial Monitor';
     this.title.closable = true;
 
-    // Interfaz del monitor serial
     this.node.innerHTML = `
       <div style="padding: 10px;">
         <label for="port">Port:</label>
@@ -33,7 +32,6 @@ class SerialMonitorWidget extends Widget {
       </div>
     `;
 
-    // Vincula eventos a los elementos del DOM
     const sendButton =
       this.node.querySelector<HTMLButtonElement>('#send-button');
     this.terminal =
@@ -45,7 +43,6 @@ class SerialMonitorWidget extends Widget {
       sendButton.addEventListener('click', this.handleSendClick.bind(this));
     }
 
-    // Conecta automáticamente al WebSocket
     this.connectWebSocket();
   }
 
@@ -61,19 +58,18 @@ class SerialMonitorWidget extends Widget {
     this.websocket = new WebSocket(wsUrl);
 
     this.websocket.onopen = () => {
-      // Envía la configuración inicial del puerto y la velocidad
-      this.websocket?.send(JSON.stringify({ port, baudrate }));
       this.terminal.value += `Connected to ${port} at ${baudrate} baudrate.\n`;
+      this.websocket?.send(JSON.stringify({ port, baudrate }));
     };
 
     this.websocket.onmessage = event => {
       const message = JSON.parse(event.data);
       if (message.data) {
         this.terminal.value += `${message.data}\n`;
+        this.terminal.scrollTop = this.terminal.scrollHeight;
       } else if (message.error) {
         this.terminal.value += `Error: ${message.error}\n`;
       }
-      this.terminal.scrollTop = this.terminal.scrollHeight;
     };
 
     this.websocket.onerror = error => {
@@ -98,10 +94,9 @@ class SerialMonitorWidget extends Widget {
       return;
     }
 
-    // Envía el comando al WebSocket
     this.websocket.send(JSON.stringify({ command }));
-    this.terminal.value += `>> ${command}\n`; // Muestra el comando enviado en el terminal
-    this.commandInput.value = ''; // Limpia el campo de entrada
+    this.terminal.value += `>> ${command}\n`;
+    this.commandInput.value = '';
   }
 }
 
