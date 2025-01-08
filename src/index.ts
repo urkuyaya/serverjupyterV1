@@ -6,7 +6,8 @@ import { Widget } from '@lumino/widgets';
 
 class SerialMonitorWidget extends Widget {
   private terminal: HTMLTextAreaElement;
-  private commandInput: HTMLInputElement;
+  private portInput: HTMLInputElement;
+  private baudrateInput: HTMLInputElement;
   private websocket: WebSocket | null = null;
 
   constructor() {
@@ -25,78 +26,79 @@ class SerialMonitorWidget extends Widget {
 
         <textarea id="serial-terminal" readonly style="width: 100%; height: 300px; font-family: monospace; margin-bottom: 10px;"></textarea>
 
-        <input type="text" id="command-input" placeholder="Enter command" style="width: 80%; font-family: monospace; margin-right: 5px;">
-        <button id="send-button" style="padding: 10px; width: 18%; font-size: 14px;">
-          Send
+        <button id="connect-button" style="padding: 10px; width: 100%; font-size: 14px; margin-top: 10px;">
+          Connect
         </button>
       </div>
     `;
 
-    const sendButton =
-      this.node.querySelector<HTMLButtonElement>('#send-button');
     this.terminal =
       this.node.querySelector<HTMLTextAreaElement>('#serial-terminal')!;
-    this.commandInput =
-      this.node.querySelector<HTMLInputElement>('#command-input')!;
-
-    if (sendButton) {
-      sendButton.addEventListener('click', this.handleSendClick.bind(this));
-    }
-
-    this.connectWebSocket();
-  }
-
-  private connectWebSocket(): void {
-    const portInput = this.node.querySelector<HTMLInputElement>('#port')!;
-    const baudrateInput =
+    this.portInput = this.node.querySelector<HTMLInputElement>('#port')!;
+    this.baudrateInput =
       this.node.querySelector<HTMLInputElement>('#baudrate')!;
 
-    const port = portInput.value || '/dev/ttyUSB0';
-    const baudrate = baudrateInput.valueAsNumber || 9600;
+    const connectButton =
+      this.node.querySelector<HTMLButtonElement>('#connect-button');
+    connectButton?.addEventListener(
+      'click',
+      this.handleConnectClick.bind(this)
+    );
+  }
 
-    const wsUrl = `ws://${window.location.host}/serial-terminal/ws`;
+  private connectWebSocket(port: string, baudrate: number): void {
+    if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+      this.websocket.close();
+    }
+
+    const wsUrl = `ws://${window.location.host}/debug-terminal/ws`;
     this.websocket = new WebSocket(wsUrl);
 
     this.websocket.onopen = () => {
-      this.terminal.value += `Connected to ${port} at ${baudrate} baudrate.\n`;
-      this.websocket?.send(JSON.stringify({ port, baudrate }));
+      this.logToTerminal(`Connected to ${port} at ${baudrate} baudrate.`);
+      this.websocket?.send(JSON.stringify({ port, baudrate })); // Configura el puerto y baudrate
     };
 
     this.websocket.onmessage = event => {
-      const message = JSON.parse(event.data);
-      if (message.data) {
-        this.terminal.value += `${message.data}\n`;
-        this.terminal.scrollTop = this.terminal.scrollHeight;
-      } else if (message.error) {
-        this.terminal.value += `Error: ${message.error}\n`;
+      console.log('Message received from WebSocket:', event.data); // Log para depuración
+      try {
+        const message = JSON.parse(event.data);
+        if (message.data) {
+          this.logToTerminal(message.data); // Agrega mensaje al terminal
+        } else if (message.error) {
+          this.logToTerminal(`Error: ${message.error}`);
+        }
+      } catch (e) {
+        console.error('Error parsing message:', e);
+        this.logToTerminal('Error parsing message from server.');
       }
     };
 
     this.websocket.onerror = error => {
       console.error('WebSocket error:', error);
-      this.terminal.value += 'WebSocket error.\n';
+      this.logToTerminal('WebSocket error.');
     };
 
     this.websocket.onclose = () => {
-      this.terminal.value += 'Disconnected from serial terminal.\n';
+      this.logToTerminal('Disconnected from serial terminal.');
     };
   }
 
-  private handleSendClick(): void {
-    if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
-      alert('WebSocket is not connected.');
+  private handleConnectClick(): void {
+    const port = this.portInput.value.trim();
+    const baudrate = this.baudrateInput.valueAsNumber;
+
+    if (!port || !baudrate) {
+      alert('Please enter a valid port and baudrate.');
       return;
     }
 
-    const command = this.commandInput.value.trim();
-    if (!command) {
-      alert('Please enter a command to send.');
-      return;
-    }
+    this.connectWebSocket(port, baudrate);
+  }
 
-    this.websocket.send(JSON.stringify({ command }));
-    this.terminal.value += `>> ${command}\n`;
-    this.commandInput.value = '';
+  private logToTerminal(message: string): void {
+    this.terminal.value += `${message}\n`;
+    this.terminal.scrollTop = this.terminal.scrollHeight; // Auto scroll
   }
 }
 
