@@ -6,6 +6,7 @@ import { Widget } from '@lumino/widgets';
 
 class SerialMonitorWidget extends Widget {
   private terminal: HTMLTextAreaElement;
+  private commandInput: HTMLInputElement;
   private portInput: HTMLInputElement;
   private baudrateInput: HTMLInputElement;
   private websocket: WebSocket | null = null;
@@ -26,6 +27,10 @@ class SerialMonitorWidget extends Widget {
 
         <textarea id="serial-terminal" readonly style="width: 100%; height: 300px; font-family: monospace; margin-bottom: 10px;"></textarea>
 
+        <input type="text" id="command-input" placeholder="Enter command" style="width: 80%; margin-right: 5px;">
+        <button id="send-button" style="padding: 10px; width: 18%; font-size: 14px;">
+          Send
+        </button>
         <button id="connect-button" style="padding: 10px; width: 100%; font-size: 14px; margin-top: 10px;">
           Connect
         </button>
@@ -34,12 +39,18 @@ class SerialMonitorWidget extends Widget {
 
     this.terminal =
       this.node.querySelector<HTMLTextAreaElement>('#serial-terminal')!;
+    this.commandInput =
+      this.node.querySelector<HTMLInputElement>('#command-input')!;
     this.portInput = this.node.querySelector<HTMLInputElement>('#port')!;
     this.baudrateInput =
       this.node.querySelector<HTMLInputElement>('#baudrate')!;
 
+    const sendButton =
+      this.node.querySelector<HTMLButtonElement>('#send-button');
     const connectButton =
       this.node.querySelector<HTMLButtonElement>('#connect-button');
+
+    sendButton?.addEventListener('click', this.handleSendClick.bind(this));
     connectButton?.addEventListener(
       'click',
       this.handleConnectClick.bind(this)
@@ -51,20 +62,20 @@ class SerialMonitorWidget extends Widget {
       this.websocket.close();
     }
 
-    const wsUrl = `ws://${window.location.host}/debug-terminal/ws`;
+    const wsUrl = `ws://${window.location.host}/serial-terminal/ws`;
     this.websocket = new WebSocket(wsUrl);
 
     this.websocket.onopen = () => {
       this.logToTerminal(`Connected to ${port} at ${baudrate} baudrate.`);
-      this.websocket?.send(JSON.stringify({ port, baudrate })); // Configura el puerto y baudrate
+      this.websocket?.send(JSON.stringify({ port, baudrate }));
     };
 
     this.websocket.onmessage = event => {
-      console.log('Message received from WebSocket:', event.data); // Log para depuración
+      console.log('Message received from WebSocket:', event.data); // Debug log
       try {
         const message = JSON.parse(event.data);
         if (message.data) {
-          this.logToTerminal(message.data); // Agrega mensaje al terminal
+          this.logToTerminal(message.data);
         } else if (message.error) {
           this.logToTerminal(`Error: ${message.error}`);
         }
@@ -96,9 +107,26 @@ class SerialMonitorWidget extends Widget {
     this.connectWebSocket(port, baudrate);
   }
 
+  private handleSendClick(): void {
+    if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+      alert('WebSocket is not connected.');
+      return;
+    }
+
+    const command = this.commandInput.value.trim();
+    if (!command) {
+      alert('Please enter a command to send.');
+      return;
+    }
+
+    this.websocket.send(JSON.stringify({ command }));
+    this.logToTerminal(`>> ${command}`);
+    this.commandInput.value = '';
+  }
+
   private logToTerminal(message: string): void {
     this.terminal.value += `${message}\n`;
-    this.terminal.scrollTop = this.terminal.scrollHeight; // Auto scroll
+    this.terminal.scrollTop = this.terminal.scrollHeight;
   }
 }
 
