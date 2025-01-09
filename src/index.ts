@@ -7,8 +7,6 @@ import { Widget } from '@lumino/widgets';
 class SerialMonitorWidget extends Widget {
   private terminal: HTMLTextAreaElement;
   private commandInput: HTMLInputElement;
-  private portInput: HTMLInputElement;
-  private baudrateInput: HTMLInputElement;
   private websocket: WebSocket | null = null;
 
   constructor() {
@@ -19,21 +17,10 @@ class SerialMonitorWidget extends Widget {
 
     this.node.innerHTML = `
       <div style="padding: 10px;">
-        <label for="port">Port:</label>
-        <input type="text" id="port" placeholder="/dev/ttyUSB0" style="width: 100%; margin-bottom: 5px;">
-        
-        <label for="baudrate">Baudrate:</label>
-        <input type="number" id="baudrate" value="9600" style="width: 100%; margin-bottom: 10px;">
-
         <textarea id="serial-terminal" readonly style="width: 100%; height: 300px; font-family: monospace; margin-bottom: 10px;"></textarea>
-
         <input type="text" id="command-input" placeholder="Enter command" style="width: 80%; margin-right: 5px;">
-        <button id="send-button" style="padding: 10px; width: 18%; font-size: 14px;">
-          Send
-        </button>
-        <button id="connect-button" style="padding: 10px; width: 100%; font-size: 14px; margin-top: 10px;">
-          Connect
-        </button>
+        <button id="send-button" style="padding: 10px; width: 18%; font-size: 14px;">Send</button>
+        <button id="connect-button" style="padding: 10px; width: 100%; font-size: 14px; margin-top: 10px;">Connect</button>
       </div>
     `;
 
@@ -41,9 +28,6 @@ class SerialMonitorWidget extends Widget {
       this.node.querySelector<HTMLTextAreaElement>('#serial-terminal')!;
     this.commandInput =
       this.node.querySelector<HTMLInputElement>('#command-input')!;
-    this.portInput = this.node.querySelector<HTMLInputElement>('#port')!;
-    this.baudrateInput =
-      this.node.querySelector<HTMLInputElement>('#baudrate')!;
 
     const sendButton =
       this.node.querySelector<HTMLButtonElement>('#send-button');
@@ -57,7 +41,7 @@ class SerialMonitorWidget extends Widget {
     );
   }
 
-  private connectWebSocket(port: string, baudrate: number): void {
+  private connectWebSocket(): void {
     if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
       this.websocket.close();
     }
@@ -66,8 +50,7 @@ class SerialMonitorWidget extends Widget {
     this.websocket = new WebSocket(wsUrl);
 
     this.websocket.onopen = () => {
-      this.logToTerminal(`Connected to ${port} at ${baudrate} baudrate.`);
-      this.websocket?.send(JSON.stringify({ port, baudrate }));
+      this.logToTerminal('Connected to simulated serial terminal.');
     };
 
     this.websocket.onmessage = event => {
@@ -96,15 +79,7 @@ class SerialMonitorWidget extends Widget {
   }
 
   private handleConnectClick(): void {
-    const port = this.portInput.value.trim();
-    const baudrate = this.baudrateInput.valueAsNumber;
-
-    if (!port || !baudrate) {
-      alert('Please enter a valid port and baudrate.');
-      return;
-    }
-
-    this.connectWebSocket(port, baudrate);
+    this.connectWebSocket();
   }
 
   private handleSendClick(): void {
