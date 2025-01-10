@@ -58,11 +58,13 @@
     "dependencies": {
         "@jupyterlab/application": "^4.0.0",
         "@jupyterlab/coreutils": "^6.3.4",
-        "@jupyterlab/services": "^7.3.4"
+        "@jupyterlab/services": "^7.3.4",
+        "chart.js": "^4.4.7"
     },
     "devDependencies": {
         "@jupyterlab/builder": "^4.0.0",
         "@jupyterlab/testutils": "^4.0.0",
+        "@types/chart.js": "^2.9.41",
         "@types/jest": "^29.2.0",
         "@types/json-schema": "^7.0.11",
         "@types/react": "^18.0.26",
