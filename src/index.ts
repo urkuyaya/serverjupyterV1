@@ -15,7 +15,6 @@ class SerialMonitorWidget extends Widget {
   private chart: Chart | null = null;
   private isConnected: boolean = false;
   private isAcquiring: boolean = false;
-  private dataInterval: any = null;
 
   constructor() {
     super();
@@ -114,19 +113,36 @@ class SerialMonitorWidget extends Widget {
     const wsUrl = `ws://${window.location.host}/serial-terminal/ws`;
     this.websocket = new WebSocket(wsUrl);
     this.websocket.onopen = () => {
-      this.isConnected = true;
-      this.logToTerminal(
-        `Conectado al puerto ${this.portInput.value} a ${this.baudrateInput.value} baud, ${this.dataBitsInput.value} bits, paridad ${this.parityInput.value}.`
+      this.websocket?.send(
+        JSON.stringify({
+          command: 'CONNECT',
+          port: this.portInput.value,
+          baudrate: parseInt(this.baudrateInput.value),
+          databits: this.dataBitsInput.value,
+          parity: this.parityInput.value
+        })
       );
+    };
+    this.websocket.onmessage = event => {
+      const message = JSON.parse(event.data);
+      if (message.data) {
+        this.logToTerminal(message.data);
+        if (message.data.includes('Connected')) {
+          this.isConnected = true;
+        }
+      }
+      if (message.voltage !== undefined && message.timestamp !== undefined) {
+        this.updateChartData(message.voltage);
+      }
     };
   }
 
   private handleDisconnectClick(): void {
     if (this.websocket) {
+      this.websocket.send(JSON.stringify({ command: 'DISCONNECT' }));
       this.websocket.close();
       this.websocket = null;
       this.isConnected = false;
-      clearInterval(this.dataInterval);
       this.logToTerminal('Desconectado del puerto.');
     }
   }
@@ -134,18 +150,15 @@ class SerialMonitorWidget extends Widget {
   private handleStartClick(): void {
     if (this.isConnected && !this.isAcquiring) {
       this.isAcquiring = true;
-      this.dataInterval = setInterval(() => {
-        const simulatedValue = Math.random() * 100;
-        this.updateChartData(simulatedValue);
-      }, 1000);
-      this.logToTerminal('Iniciando adquisición.');
+      this.websocket?.send(JSON.stringify({ command: 'START' }));
+      this.logToTerminal('Adquisición iniciada.');
     }
   }
 
   private handleStopClick(): void {
-    if (this.isAcquiring) {
+    if (this.isConnected && this.isAcquiring) {
       this.isAcquiring = false;
-      clearInterval(this.dataInterval);
+      this.websocket?.send(JSON.stringify({ command: 'STOP' }));
       this.logToTerminal('Adquisición detenida.');
     }
   }
