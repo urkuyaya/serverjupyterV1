@@ -65,7 +65,7 @@ class SerialWebSocketHandler(WebSocketHandler):
                 baudrate=baudrate,
                 bytesize=databits,
                 parity=parity_mapping.get(parity, serial.PARITY_NONE),
-                timeout=1
+                timeout=0  # Cambio a lectura no bloqueante
             )
             self.log_to_clients(f"Connected to {port} at {baudrate} baud, {databits} bits, {parity} parity.")
         except serial.SerialException as e:
@@ -80,7 +80,7 @@ class SerialWebSocketHandler(WebSocketHandler):
     def start_acquisition(self):
         if self.serial_connection and self.serial_connection.is_open:
             self.acquiring = True
-            self.periodic_callback = PeriodicCallback(self.read_serial_data, 1000)
+            self.periodic_callback = PeriodicCallback(self.read_serial_data, 100)
             self.periodic_callback.start()
             self.serial_connection.write(b'{"command":"START"}\n')
             self.log_to_clients("Started data acquisition.")
@@ -99,12 +99,13 @@ class SerialWebSocketHandler(WebSocketHandler):
     def read_serial_data(self):
         if self.serial_connection and self.serial_connection.is_open:
             try:
-                line = self.serial_connection.readline().decode('utf-8').strip()
-                if line:
-                    print(f"Data received: {line}")
-                    parsed_data = self.format_data(line)
-                    if parsed_data:
-                        IOLoop.current().add_callback(self.broadcast_data, parsed_data)
+                if self.serial_connection.in_waiting > 0:
+                    line = self.serial_connection.read(self.serial_connection.in_waiting).decode('utf-8').strip()
+                    if line:
+                        print(f"Data received: {line}")
+                        parsed_data = self.format_data(line)
+                        if parsed_data:
+                            IOLoop.current().add_callback(self.broadcast_data, parsed_data)
             except Exception as e:
                 IOLoop.current().add_callback(self.log_to_clients, f"Error reading data: {e}")
 
@@ -120,10 +121,7 @@ class SerialWebSocketHandler(WebSocketHandler):
 
     def broadcast_data(self, data):
         for client in self.clients:
-            # Enviar datos al gráfico y al cuadro de texto
             IOLoop.current().add_callback(client.write_message, data)
-            IOLoop.current().add_callback(client.write_message, json.dumps({"data": data}))
-
 
     def log_to_clients(self, message):
         for client in self.clients:
