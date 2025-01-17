@@ -19,12 +19,13 @@ class SerialMonitorWidget extends Widget {
   constructor() {
     super();
     this.id = 'serial-monitor-widget';
-    this.title.label = 'Serial Monitor';
+    this.title.label = 'Instumento-Virtual-UG';
     this.title.closable = true;
 
     this.node.innerHTML = `
       <div style="padding: 10px;">
-        <label for="port">Puerto:</label>
+      <h2 style="text-align: center;">INSTRUMENTO VIRTUAL</h2> <!-- Título agregado -->
+      <label for="port">Puerto:</label>
         <input type="text" id="port" placeholder="/dev/ttyUSB0" style="width: 100%;">
 
         <label for="baudrate">Baudrate:</label>
