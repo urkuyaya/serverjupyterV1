@@ -177,7 +177,7 @@ class SerialMonitorWidget extends Widget {
     }
   }
 
-  private updateChartData(value: number): void {
+  public updateChartData(value: number): void {
     const dataset = this.chart!.data.datasets[0];
     const labels = this.chart!.data.labels as string[];
     labels.push(new Date().toLocaleTimeString());
@@ -190,13 +190,75 @@ class SerialMonitorWidget extends Widget {
     this.terminal.scrollTop = this.terminal.scrollHeight;
   }
 }
+class VoltageDisplayWidget extends Widget {
+  private voltageDisplay: HTMLElement;
+
+  constructor() {
+    super();
+    this.id = 'voltage-display-widget';
+    this.title.label = 'Voltímetro';
+    this.title.closable = true;
+
+    this.node.innerHTML = `
+      <div style="text-align: center; padding: 20px;">
+        <h2>Pantalla de Voltaje</h2>
+        <div id="voltage-display" style="
+          font-size: 48px; 
+          font-weight: bold; 
+          color: #007BFF; 
+          border: 2px solid #000; 
+          width: 300px; 
+          margin: 0 auto; 
+          padding: 20px; 
+          border-radius: 10px;">
+          0.00 V
+        </div>
+      </div>
+    `;
+
+    this.voltageDisplay = this.node.querySelector('#voltage-display')!;
+  }
+
+  public updateVoltage(value: number): void {
+    this.voltageDisplay.textContent = `${value.toFixed(2)} V`;
+  }
+}
 
 const plugin: JupyterFrontEndPlugin<void> = {
   id: 'serial-monitor',
   autoStart: true,
   activate: (app: JupyterFrontEnd) => {
-    const widget = new SerialMonitorWidget();
-    app.shell.add(widget, 'right');
+    // Instanciar los widgets existentes y el nuevo
+    const serialMonitorWidget = new SerialMonitorWidget(); // Widget del gráfico
+    const voltageDisplayWidget = new VoltageDisplayWidget(); // Nuevo widget del voltímetro
+
+    // Agregar el widget del gráfico
+    app.shell.add(serialMonitorWidget, 'right');
+
+    // Agregar el widget del voltímetro
+    app.shell.add(voltageDisplayWidget, 'right');
+
+    // Crear conexión WebSocket
+    const wsUrl = `ws://${window.location.host}/serial-terminal/ws`;
+    const websocket = new WebSocket(wsUrl);
+
+    websocket.onopen = () => {
+      console.log('WebSocket connection established.');
+    };
+
+    websocket.onmessage = event => {
+      const message = JSON.parse(event.data);
+
+      // Mantener la funcionalidad del gráfico
+      if (message.voltage !== undefined) {
+        serialMonitorWidget.updateChartData(message.voltage);
+        voltageDisplayWidget.updateVoltage(message.voltage); // Actualizar voltímetro
+      }
+    };
+
+    websocket.onclose = () => {
+      console.log('WebSocket connection closed.');
+    };
   }
 };
 
