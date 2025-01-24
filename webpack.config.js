@@ -21,14 +21,14 @@ module.exports = {
         use: ['style-loader', 'css-loader'],
       },
       {
-        test: /\.(png|jpg|gif|svg)$/, // Manejo de imágenes
+        test: /\.(png|jpg|gif|svg|woff|woff2|eot|ttf|otf)$/, // Manejo de imágenes y fuentes
         use: [
           {
             loader: 'file-loader',
             options: {
-              name: '[name].[ext]',
-              outputPath: 'images/', // Carpeta dentro de `lib`
-              publicPath: 'images/', // Ruta accesible para el navegador
+              name: '[name].[ext]', // Mantener el nombre original del archivo
+              outputPath: 'assets/', // Carpeta dentro de `lib`
+              publicPath: 'assets/', // Ruta accesible para el navegador
             },
           },
         ],

@@ -1629,6 +1629,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fortawesome/fontawesome-free@npm:^6.7.2":
+  version: 6.7.2
+  resolution: "@fortawesome/fontawesome-free@npm:6.7.2"
+  checksum: 2ceb384ada8e4a1e8a8e24384a35e3afa01589ddec67c8c52e3ad5d7db1662d0fc92560bd9a23baa4e0676e721e423aef99fb79fe6899bf13900fd1e611b6760
+  languageName: node
+  linkType: hard
+
 "@humanwhocodes/config-array@npm:^0.13.0":
   version: 0.13.0
   resolution: "@humanwhocodes/config-array@npm:0.13.0"
@@ -8280,6 +8287,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "serial-ext-jlab@workspace:."
   dependencies:
+    "@fortawesome/fontawesome-free": ^6.7.2
     "@jupyterlab/application": ^4.0.0
     "@jupyterlab/builder": ^4.0.0
     "@jupyterlab/coreutils": ^6.3.4

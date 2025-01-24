@@ -1,4 +1,6 @@
 @import url('base.css');
+@import '~@fortawesome/fontawesome-free/css/all.min.css';
+
 /* Estilos generales */
 body {
   font-family: Arial, sans-serif;
