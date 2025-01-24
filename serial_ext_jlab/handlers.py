@@ -122,6 +122,7 @@ class SerialWebSocketHandler(WebSocketHandler):
     def broadcast_data(self, data):
         for client in self.clients:
             IOLoop.current().add_callback(client.write_message, data)
+            IOLoop.current().add_callback(client.write_message, json.dumps({"data": data}))
 
     def log_to_clients(self, message):
         for client in self.clients:
